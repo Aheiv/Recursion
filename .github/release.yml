@@ -1,0 +1,54 @@
+name: Create Release and Upload Artifact 
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest 
+
+    steps:
+      - name: Checkout code 
+        uses: actions/checkout@v2
+
+      - name: Setup .NET 
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '6.0.x' 
+
+      - name: Build project
+        run: dotnet build --configuration Debug
+
+      - name: Publish project 
+        run: dotnet publish --configuration Debug --output ./ConsoleApp4/bin/Debug/net6.0
+
+      - name: Archive artifact folder
+        working-directory: ./ConsoleApp4/bin/Debug
+        run: zip -r program.zip ./net6.0
+
+      - name: Create Release 
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GIT_TOKEN }} 
+        with:
+          tag_name: ${{ github.ref }} 
+          release_name: Release ${{ github.ref }} 
+          draft: false 
+          prerelease: false 
+
+      - name: Upload Release Asset 
+        id: upload-release-asset 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GIT_TOKEN }} 
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} 
+          asset_path: ./ConsoleApp4/bin/Debug/program.zip 
+          asset_name: program.zip 
+          asset_content_type: application/zip 
+      - name: Run a multi-line script
+        run: |
+          echo Add other actions to build,
+          echo test, and deploy your project.
